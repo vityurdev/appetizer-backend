@@ -11,6 +11,8 @@ const upload = multer({dest: 'uploads/'});
 
 const User = require('./../models/User');
 
+
+// get current authorized user (own profile info)
 router.get('/', VerifyToken, (req, res) => {
     User.findById(req.userId, {password: 0}, (err, user) => {
         if (err) 
@@ -23,6 +25,7 @@ router.get('/', VerifyToken, (req, res) => {
     });
 });
 
+// get user profile info
 router.get('/:id', (req, res) => {
     User.findById(req.params.id, {password: 0}, (err, user) => {
         if (err)
