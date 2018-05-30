@@ -8,9 +8,20 @@ router.use(bodyParser.json());
 const VerifyToken = require('./../auth/VerifyToken')
 
 const multer = require('multer');
+const storage = multer.diskStorage({
+    destination: function(req, file, cb) {
+        cb(null, 'uploads/');
+    },
+    filename: function(req, file, cb) {
+        cb(null, new Date().toISOString().replace(/:/g, '-') + file.originalname);
+    }
+})
+
 const upload = multer({
-    dest: 'uploads/'
+    storage: storage
 });
+
+
 
 
 
@@ -45,10 +56,16 @@ router.get('/:id', (req, res) => {
 // update user profile info
 
 router.patch('/', VerifyToken, upload.single('profilePhoto'), (req, res) => {
+    /*
     console.log(req.body);
-    console.log(req.file);
+    console.log(req.file);*/
 
-    User.findByIdAndUpdate(req.userId, req.body, { new: true }, (err, user) => {
+    let patch = new Object(req.body);
+    Object.assign(patch, req.file && { profilePhotoUrl: req.file.path });
+
+    console.log(patch);
+
+    User.findByIdAndUpdate(req.userId, patch, { new: true }, (err, user) => {
         if (err)
             return res.status(500).send('Internal server error while patching profile info.');
 

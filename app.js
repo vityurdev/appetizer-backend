@@ -8,6 +8,6 @@ app.use('/api/auth', AuthController);
 const ProfileController = require('./controllers/ProfileController');
 app.use('/api/profile', ProfileController);
 
-app.use(express.static('uploads'));
+app.use('/uploads', express.static('uploads'));
 
 module.exports = app;
