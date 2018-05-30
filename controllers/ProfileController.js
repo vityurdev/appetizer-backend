@@ -21,10 +21,6 @@ const upload = multer({
     storage: storage
 });
 
-
-
-
-
 const User = require('./../models/User');
 
 // get current authorized user (own profile info)
@@ -54,16 +50,9 @@ router.get('/:id', (req, res) => {
 });
 
 // update user profile info
-
 router.patch('/', VerifyToken, upload.single('profilePhoto'), (req, res) => {
-    /*
-    console.log(req.body);
-    console.log(req.file);*/
-
     let patch = new Object(req.body);
     Object.assign(patch, req.file && { profilePhotoUrl: req.file.path });
-
-    console.log(patch);
 
     User.findByIdAndUpdate(req.userId, patch, { new: true }, (err, user) => {
         if (err)
@@ -74,6 +63,19 @@ router.patch('/', VerifyToken, upload.single('profilePhoto'), (req, res) => {
 
         res.status(200).send(user);
     })
-})
+});
+
+// delete current authorized user info
+router.delete('/', VerifyToken, (req, res) => {
+    User.findByIdAndRemove(req.userId, {password: 0}, (err, user) => {
+        if (err)
+            return res.status(500).send('Internal server error while deleting profile info.');
+
+        if (!user)
+            return res.status(404).send('Deleting: No user profile found');
+
+        res.status(200).send({success: true});
+    });
+});
 
 module.exports = router;
