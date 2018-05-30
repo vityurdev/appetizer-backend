@@ -1,16 +1,20 @@
 const express = require('express');
 const router = express.Router();
 const bodyParser = require('body-parser');
-router.use(bodyParser.urlencoded({ extended: false }));
+
+router.use(bodyParser.urlencoded({extended: false}));
 router.use(bodyParser.json());
 
 const VerifyToken = require('./../auth/VerifyToken')
 
 const multer = require('multer');
-const upload = multer({dest: 'uploads/'});
+const upload = multer({
+    dest: 'uploads/'
+});
+
+
 
 const User = require('./../models/User');
-
 
 // get current authorized user (own profile info)
 router.get('/', VerifyToken, (req, res) => {
@@ -38,8 +42,21 @@ router.get('/:id', (req, res) => {
     });
 });
 
-router.patch(':id', VerifyToken, upload.single('profile_photo'), (req, res) => {
+// update user profile info
 
-});
+router.patch('/', VerifyToken, upload.single('profilePhoto'), (req, res) => {
+    console.log(req.body);
+    console.log(req.file);
+
+    User.findByIdAndUpdate(req.userId, req.body, { new: true }, (err, user) => {
+        if (err)
+            return res.status(500).send('Internal server error while patching profile info.');
+
+        if (!user)
+            return res.status(404).send('Patching: No user profile found');
+
+        res.status(200).send(user);
+    })
+})
 
 module.exports = router;
