@@ -8,6 +8,9 @@ app.use('/api/auth', AuthController);
 const ProfileController = require('./controllers/ProfileController');
 app.use('/api/profile', ProfileController);
 
+const RecipeController = require('./controllers/RecipeController');
+app.use('/api', RecipeController);
+
 app.use('/uploads', express.static('uploads'));
 
 module.exports = app;

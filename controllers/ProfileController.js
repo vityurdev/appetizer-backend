@@ -5,7 +5,7 @@ const bodyParser = require('body-parser');
 router.use(bodyParser.urlencoded({extended: false}));
 router.use(bodyParser.json());
 
-const VerifyToken = require('./../auth/VerifyToken')
+const VerifyToken = require('./../auth/VerifyToken');
 
 const multer = require('multer');
 const storage = multer.diskStorage({
