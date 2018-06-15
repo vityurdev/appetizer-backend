@@ -36,6 +36,8 @@ router.post('/register', (req, res) => {
 });
 
 router.post('/login', (req, res) => {
+    console.log(req.body);
+
     User.findOne({ username: req.body.username }, (err, user) => {
         if (err)
             return res.status(500).send('There was an error while performing login.');

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const bodyParser = require('body-parser');
+const fs = require('fs');
 
 router.use(bodyParser.urlencoded({extended: false}));
 router.use(bodyParser.json());
@@ -31,6 +32,8 @@ router.get('/', VerifyToken, (req, res) => {
         
         if (!user) 
             return res.status(404).send('No authorized user profile found');
+
+        delete user['password'];
         
         res.status(200).send(user);
     });
@@ -51,6 +54,8 @@ router.get('/:id', (req, res) => {
 
 // update user profile info
 router.patch('/', VerifyToken, upload.single('profilePhoto'), (req, res) => {
+    console.log(req.body);
+
     let patch = new Object(req.body);
     Object.assign(patch, req.file && { profilePhotoUrl: req.file.path });
 
@@ -60,6 +65,8 @@ router.patch('/', VerifyToken, upload.single('profilePhoto'), (req, res) => {
 
         if (!user)
             return res.status(404).send('Patching: No user profile found');
+
+        delete user["password"];
 
         res.status(200).send(user);
     })
@@ -77,5 +84,40 @@ router.delete('/', VerifyToken, (req, res) => {
         res.status(200).send({success: true});
     });
 });
+
+router.post('/:id/follow', VerifyToken, (req, res, next) => {
+    let profileId = req.userId;
+
+    User.findById(profileId).then((user) => {
+        if (!user) 
+            return res.sendStatus(404);
+
+        return user.follow(req.params.id).then(() => {
+            return res.status(200).send({
+                action: "subscribe",
+                status: "success",
+                follower: user,
+                followee: req.params.id
+            });
+        })
+    }).catch(next)
+});
+
+router.delete('/:id/follow', VerifyToken, function(req, res, next){
+    let profileId = req.userId;
+  
+    User.findById(profileId).then(function(user){
+      if (!user) { return res.sendStatus(404); }
+  
+      return user.unfollow(req.params.id).then(function(){
+        return res.status(200).send({
+            action: "unsubscribe",
+            status: "success",
+            unfollower: user,
+            unfollowee: req.params.id
+        });
+      });
+    }).catch(next);
+  });
 
 module.exports = router;
