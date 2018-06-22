@@ -34,6 +34,8 @@ router.get('/', VerifyToken, (req, res) => {
             return res.status(404).send('No authorized user profile found');
 
         delete user['password'];
+
+        console.log(user);
         
         res.status(200).send(user);
     });

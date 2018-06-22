@@ -26,6 +26,11 @@ const upload = multer({
 
 //POST recipe
 router.post('/', VerifyToken, upload.single('recipePhoto'), (req, res) => {
+
+    console.log("req.body: ");
+    console.log(req.body);
+    console.log("req.file: ");
+    console.log(req.file);
     
 
     Recipe.create({
@@ -60,6 +65,31 @@ router.post('/', VerifyToken, upload.single('recipePhoto'), (req, res) => {
         
 
         
+    });
+});
+
+// GET recipe by Id
+router.get("/:id", async (req, res) => {
+    console.log(req.body);
+
+    let recipeId = req.params.id;
+    let recipe = await Recipe.findById(recipeId);
+    let author = await User.findById(recipe.authorId);
+
+
+
+    res.status(200).send({
+        id: recipeId,
+        title: recipe.title,
+        authorUsername: author.username,
+        createdAt: recipe.createdAt,
+        lastEditedAt: recipe.lastEditedAt,
+        recipePhotoUrl: recipe.recipePhotoUrl,
+        youtubeLink: recipe.youtubeLink,
+        directions: recipe.directions,
+        ingredients: recipe.ingredients,
+        comments: recipe.comments,
+        likes: recipe.likes
     });
 });
 

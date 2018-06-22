@@ -12,115 +12,193 @@ const User = require('./../models/User');
 const Recipe = require('./../models/Recipe');
 
 // get your personal feed based on your subscriptions 
-router.get('/', VerifyToken, (req, res) => {
+router.get('/', VerifyToken, async (req, res) => {
     const userId = req.userId;
 
-    console.log("ID of current user: " + userId);
+    const qtyOfPostsLoaded = +req.headers["qtyofpostsloaded"];
+    const newestPostId = req.headers["newestpostid"];
 
-    User.findById(userId).then((user) => {
+    console.log("qtyOfPostsLoaded: " + qtyOfPostsLoaded);
+    console.log("newestpostid: " + newestPostId);
+
+    /*
+    let lastPostReached = lastPostLoadedGiven && false;
+    let newestPostReached = newestPostLoadedGiven && false;
+    */
+
+    User.findById(userId).then(async (user) => {
         const userFolloweeIDs = user.following;
-
-        const iterator = userFolloweeIDs[Symbol.iterator]();
-
-        console.log ("User.following = " + user.following);
-
-        console.log("These are current user\'s followees\' IDs:");
-        for (let followeeId of iterator) {
-            console.log(followeeId);
-        }
-
-
-
-        const iArr = userFolloweeIDs[Symbol.iterator]();
-
-        let surface = [];
-        let feed = [];
-    
         
-        console.log("Let iteration begin!");
+        let feed = [];
 
-        for (let i = 0, p = Promise.resolve(); i < 10; i++) {
-            
+        let i = 0;
 
+        if (qtyOfPostsLoaded) {
             
-            for (let followeeID of iArr) {
-                User.findById(followeeID).then((user) => {
+            console.log("In qtyofPostLoaded");
+            while (i < 5 + qtyOfPostsLoaded) {
+                let surface = [];
+                
+                for await (let followeeId of userFolloweeIDs) {
+                    let user = await User.findById(followeeId);
+
                     let index = 0;
-
                     
-                    while (surface.some(e => e.id === user.posts[index])) {
+                    while (user.posts[index] && feed.some(e => e.id.toString() == user.posts[index].toString())) {
                         index++;
-                        if (user.posts[index] === undefined) {
-                            break;
-                        }
                     }
 
-                    console.log("Index: " + index);
+                    let latestPostId = user.posts[index];
 
-                    let latestPostID = user.posts[index];
+                    if (latestPostId !== undefined) {
+                        let recipe = await Recipe.findById(latestPostId);
+                        let author = await User.findById(recipe.authorId);
+                        
 
-                    console.log("LatestPostID: " + latestPostID);
-                    
+                        surface.push({
+                            id: latestPostId,
+                            title: recipe.title,
+                            authorUsername: author.username,
+                            createdAt: recipe.createdAt,
+                            lastEditedAt: recipe.lastEditedAt,
+                            recipePhotoUrl: recipe.recipePhotoUrl,
+                            youtubeLink: recipe.youtubeLink,
+                            directions: recipe.directions,
+                            ingredients: recipe.ingredients,
+                            comments: recipe.comments,
+                            likes: recipe.likes
 
-                    let freshestPost = null;
-                    
-                    if (surface.length > 0) {
-                        freshestPost = surface.reduce((prev, current) => {
-                            return (prev.createdAt > current.createdAt) ? prev : current
                         });
+                    }   
+                }
 
-                        surface.splice(surface.indexOf(freshestPost), 1);
-                    }
-
-                    console.log(freshestPost)
+                if (surface.length > 0) {
+                    let freshestPost = surface.reduce((prev, current) => {
+                        return prev.createdAt > current.createdAt ? prev : current;
+                    });
                     
-
-                    
-
-                    if (latestPostID !== undefined) {
-                        Recipe.findById(latestPostID).then((recipe) => {
-                            
-
-                            surface.push({
-                                id: latestPostID,
-                                createdAt: recipe.createdAt
-                            });
-
-                            freshestPost = null;
-
-                            if (surface.length > 0) {
-                                freshestPost = surface.reduce((prev, current) => {
-                                    return (prev.createdAt > current.createdAt) ? prev : current
-                                });
-                            }
-
-                            feed.push(freshestPost);
-
-                            
-                        });
-                    }
-                });
+                    feed.push(freshestPost);
+                } 
+                
+                i++;
             }
 
-            // console.log(surface);
 
-            /*
-            let freshestPost = null;
 
-            if (surface.length > 0) {
-                freshestPost = surface.reduce((prev, current) => {
-                    return (prev.createdAt > current.createdAt) ? prev : current
-                });
+
+
+        } else if (newestPostId) {
+            console.log("IN newestpost");
+            let freshestPost = { 
+                id: undefined,
+                createdAt: undefined
             }
-            
 
-            feed.push(freshestPost);
-            */
-            
+            while (!freshestPost.id || freshestPost.id && freshestPost.id.toString() != newestPostId.toString()) {
+                let surface = [];
+                
+                for await (let followeeId of userFolloweeIDs) {
+                    let user = await User.findById(followeeId);
 
+                    let index = 0;
+                    
+                    while (user.posts[index] && feed.some(e => e.id.toString() == user.posts[index].toString())) {
+                        index++;
+                    }
+
+                    let latestPostId = user.posts[index];
+
+                    if (latestPostId !== undefined) {
+                        let recipe = await Recipe.findById(latestPostId);
+                        let author = await User.findById(recipe.authorId);
+
+                        surface.push({
+                            id: latestPostId,
+                            title: recipe.title,
+                            authorUsername: author.username,
+                            createdAt: recipe.createdAt,
+                            lastEditedAt: recipe.lastEditedAt,
+                            recipePhotoUrl: recipe.recipePhotoUrl,
+                            youtubeLink: recipe.youtubeLink,
+                            directions: recipe.directions,
+                            ingredients: recipe.ingredients,
+                            comments: recipe.comments,
+                            likes: recipe.likes
+                        });
+                    }   
+                }
+
+                if (surface.length > 0) {
+                    freshestPost = surface.reduce((prev, current) => {
+                        return prev.createdAt > current.createdAt ? prev : current;
+                    });
+                    
+                    feed.push(freshestPost);
+                }
+            }
+
+
+
+            
+        } else {
+            console.log("in no headers");
+            while (i < 5) {
+                let surface = [];
+                
+                for await (let followeeId of userFolloweeIDs) {
+                    let user = await User.findById(followeeId);
+
+                    let index = 0;
+                    
+                    while (user.posts[index] && feed.some(e => e.id.toString() == user.posts[index].toString())) {
+                        index++;
+                    }
+
+                    let latestPostId = user.posts[index];
+
+                    if (latestPostId !== undefined) {
+                        let recipe = await Recipe.findById(latestPostId);
+                        let author = await User.findById(recipe.authorId);
+
+                        surface.push({
+                            id: latestPostId,
+                            title: recipe.title,
+                            authorUsername: author.username,
+                            createdAt: recipe.createdAt,
+                            lastEditedAt: recipe.lastEditedAt,
+                            recipePhotoUrl: recipe.recipePhotoUrl,
+                            youtubeLink: recipe.youtubeLink,
+                            directions: recipe.directions,
+                            ingredients: recipe.ingredients,
+                            comments: recipe.comments,
+                            likes: recipe.likes
+                        });
+                    }   
+                }
+
+                if (surface.length > 0) {
+                    let freshestPost = surface.reduce((prev, current) => {
+                        return prev.createdAt > current.createdAt ? prev : current;
+                    });
+                    
+                    feed.push(freshestPost);
+                } 
+                
+                i++;
+            }
         }
 
+        if (newestPostId) {
+            feed.pop();
+        }
+
+
+        if (qtyOfPostsLoaded) 
+            feed.splice(0, qtyOfPostsLoaded);
+        
         res.status(200).send(feed);
+
+        feed = [];
     });
 })
 

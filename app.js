@@ -14,6 +14,9 @@ app.use('/api/recipes', RecipeController);
 const FeedController = require('./controllers/FeedController');
 app.use('/api', FeedController);
 
+const ActivityController = require('./controllers/ActivityController');
+app.use('/api/activity', ActivityController);
+
 app.use('/uploads', express.static('uploads'));
 
 module.exports = app;
